@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano y Callejero Catastral - Posadas, Misiones</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <style>
+        :root {
+            --primary-color: #1b4d3e;
+            --accent-color: #d97706;
+            --cefe-color: #2563eb;
+            --bg-light: #f8fafc;
+            --text-dark: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 65px;
+            flex-shrink: 0;
+            gap: 1rem;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 450px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.9rem;
+            outline: none;
+            color: var(--text-dark);
+        }
+
+        .search-container button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .search-container button:hover {
+            background-color: #b45309;
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 65px);
+            position: relative;
+        }
+
+        #map {
+            flex: 1;
+            height: 100%;
+            width: 100%;
+            background-color: #e2e8f0;
+            z-index: 1;
+        }
+
+        .sidebar {
+            width: 410px;
+            background: white;
+            border-left: 1px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0.75rem 1rem;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .offline-badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .dropdown-section {
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .dropdown-section.cefe-bg {
+            background: #eff6ff;
+            border-bottom: 2px solid #bfdbfe;
+        }
+
+        .dropdown-section label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+        }
+
+        .dropdown-section.cefe-bg label {
+            color: var(--cefe-color);
+        }
+
+        .dropdown-section select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            outline: none;
+        }
+
+        .info-panel {
+            padding: 1rem;
+        }
+
+        .info-panel h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-panel p {
+            font-size: 0.85rem;
+            color: #475569;
+            margin-bottom: 0.4rem;
+            line-height: 1.4;
+        }
+
+        .catastro-card {
+            background: #f8fafc;
+            border-left: 4px solid var(--accent-color);
+            padding: 0.6rem;
+            margin-top: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .catastro-card p {
+            margin-bottom: 0.2rem;
+            font-size: 0.8rem;
+        }
+
+        .quick-links {
+            padding: 0.6rem 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .quick-links h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.3rem;
+        }
+
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .badge {
+            background-color: #e2e8f0;
+            color: #334155;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .badge:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>📍 Callejero Posadas</h1>
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Ej: Junín 2064, Posadas..." autocomplete="off">
+                <button onclick="buscarDireccionLibre()">Buscar</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <div id="map"></div>
+
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <span>Información Catastral</span>
+                    <span class="offline-badge">Servidor Local</span>
+                </div>
+
+                <!-- Buscador Exclusivo de CEF (Solo nombres limpios) -->
+                <div class="dropdown-section cefe-bg">
+                    <label for="cef-select">🏆 Buscador Exclusivo de CEF</label>
+                    <select id="cef-select" onchange="seleccionarCefMenu(this.value)">
+                        <option value="">-- Seleccioná un CEF --</option>
+                        <option value="CEF N°1">CEF N°1</option>
+                        <option value="CEF N°2">CEF N°2</option>
+                        <option value="CEF N°17">CEF N°17</option>
+                        <option value="CEF N°20">CEF N°20</option>
+                        <option value="CEF N°22">CEF N°22</option>
+                        <option value="CEF N°24">CEF N°24</option>
+                        <option value="CEF N°25">CEF N°25</option>
+                        <option value="CEF N°28">CEF N°28</option>
+                        <option value="CEF N°11">CEF N°11</option>
+                        <option value="CEFE N°1">CEFE N°1</option>
+                    </select>
+                </div>
+
+                <!-- Organismos Provinciales Oficiales -->
+                <div class="dropdown-section">
+                    <label for="entidades-select">🏛️ Organismos Provinciales</label>
+                    <select id="entidades-select" onchange="seleccionarEntidadMenu(this.value)">
+                        <option value="">-- Seleccioná un organismo --</option>
+                        <option value="Energía de Misiones">1. Energía de Misiones (La Rioja 2051)</option>
+                        <option value="IPLyC S.E.">2. IPLyC S.E. (Lotería y Casinos) (Córdoba 1820)</option>
+                        <option value="Ministerio de Coordinación General de Gabinete">3. Ministerio de Coordinación General de Gabinete (25 de Mayo 1460)</option>
+                        <option value="Ministerio de Gobierno">4. Ministerio de Gobierno (Félix de Azara 1749)</option>
+                        <option value="Ministerio de Hacienda, Finanzas, Obras y Servicios Públicos">5. Ministerio de Hacienda, Finanzas, Obras y Serv. Púb. (Rivadavia 1487)</option>
+                        <option value="Ministerio de Cultura, Educación, Ciencia y Tecnología">6. Ministerio de Cultura, Educación, Ciencia y Tecnología (Miguel Dávila 976)</option>
+                        <option value="Ministerio de Deportes">7. Ministerio de Deportes (José Sorsana 5400)</option>
+                        <option value="Ministerio de Ecología y Recursos Naturales Renovables">8. Ministerio de Ecología y Recursos Naturales Renovables (San Lorenzo 1538)</option>
+                        <option value="Ministerio de Salud Pública">9. Ministerio de Salud Pública (Tucumán 2174)</option>
+                        <option value="Ministerio de Turismo">10. Ministerio de Turismo (Colón 1985)</option>
+                        <option value="Ministerio de Trabajo y Empleo">11. Ministerio de Trabajo y Empleo (Santa Fe 343)</option>
+                        <option value="Ministerio de Desarrollo Social, la Mujer y la Juventud">12. Ministerio de Desarrollo Social, la Mujer y la Juventud (Centro Cívico)</option>
+                        <option value="Ministerio del Agro y la Producción">13. Ministerio del Agro y la Producción (Colón 1628)</option>
+                        <option value="Ministerio de Acción Cooperativa, Mutual, Comercio e Integración">14. Ministerio de Acción Cooperativa, Mutual, Comercio e Int. (Av. Mitre 2180)</option>
+                        <option value="Ministerio de Derechos Humanos">15. Ministerio de Derechos Humanos (Félix de Azara 2440)</option>
+                        <option value="Ministerio de Industria">16. Ministerio de Industria (San Martín 1495)</option>
+                        <option value="Instituto de Macroeconomía Circular (IMaC)">17. Instituto de Macroeconomía Circular - IMaC (San Lorenzo 2152)</option>
+                    </select>
+                </div>
+
+                <div class="info-panel" id="info-content">
+                    <p>Seleccioná un CEF, un organismo provincial o buscá una dirección en la barra superior.</p>
+                </div>
+
+                <div class="quick-links">
+                    <h4>Zonas y Accesos</h4>
+                    <div class="badge-container">
+                        <span class="badge" onclick="map.setView([-27.3671, -55.8961], 15)">Centro</span>
+                        <span class="badge" onclick="map.setView([-27.3550, -55.8850], 15)">Villa Sarita</span>
+                        <span class="badge" onclick="map.setView([-27.4350, -55.9550], 15)">Itaembé Guazú</span>
+                        <span class="badge" onclick="map.setView([-27.4300, -55.8900], 15)">Miguel Lanús</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        const baseDeDatosCEF = {
+            "CEF N°1": { nombre: "CEF N°1", director: "Gustavo Breitembruch", telefono: "376-4663499", lat: -27.374708, lon: -55.925521 },
+            "CEF N°2": { nombre: "CEF N°2", director: "Miguel Ángel González (GATO)", telefono: "376-4702478", lat: -28.049999, lon: -56.022376 },
+            "CEF N°17": { nombre: "CEF N°17", director: "Yolanda Andino", telefono: "376-4570434", lat: -27.461544, lon: -58.822050 },
+            "CEF N°20": { nombre: "CEF N°20", director: "Alejandro Cabrera", telefono: "3755-655766", lat: -27.419363, lon: -55.949029 },
+            "CEF N°22": { nombre: "CEF N°22", director: "Roberto Galiano", telefono: "376-4138527", lat: -27.394377, lon: -55.944942 },
+            "CEF N°24": { nombre: "CEF N°24", director: "Fabián Benítez", telefono: "376-4698822", lat: -27.371656, lon: -56.003617 },
+            "CEF N°25": { nombre: "CEF N°25", director: "Ricardo Fabián Biondi", telefono: "376-4373377", lat: -27.372229, lon: -55.889556 },
+            "CEF N°28": { nombre: "CEF N°28", director: "Julio Estéban Hoils", telefono: "376-4144057", lat: -27.416999, lon: -55.903132 },
+            "CEF N°11": { nombre: "CEF N°11", director: "Marcelo Cenbruski", telefono: "3764-560926", lat: -27.422292, lon: -55.950261 },
+            "CEFE N°1": { nombre: "CEFE N°1 (Itinerante)", director: "Equipo Itinerante", telefono: "S/D", lat: -27.422292, lon: -55.950261 }
+        };
+
+        const baseDeDatosOrganismos = {
+            "Energía de Misiones": { nombre: "Energía de Misiones", dir: "La Rioja 2051", lat: -27.3655, lon: -55.8920 },
+            "IPLyC S.E.": { nombre: "IPLyC S.E. (Lotería y Casinos)", dir: "Córdoba 1820", lat: -27.3668, lon: -55.8945 },
+            "Ministerio de Coordinación General de Gabinete": { nombre: "Ministerio de Coordinación General de Gabinete", dir: "25 de Mayo 1460", lat: -27.3642, lon: -55.8931 },
+            "Ministerio de Gobierno": { nombre: "Ministerio de Gobierno", dir: "Félix de Azara 1749", lat: -27.3680, lon: -55.8955 },
+            "Ministerio de Hacienda, Finanzas, Obras y Servicios Públicos": { nombre: "Ministerio de Hacienda, Finanzas, Obras y Servicios Públicos", dir: "Rivadavia 1487", lat: -27.3650, lon: -55.8940 },
+            "Ministerio de Cultura, Educación, Ciencia y Tecnología": { nombre: "Ministerio de Cultura, Educación, Ciencia y Tecnología", dir: "Miguel Dávila 976", lat: -27.3720, lon: -55.8910 },
+            "Ministerio de Deportes": { nombre: "Ministerio de Deportes", dir: "José Sorsana 5400", lat: -27.400590, lon: -55.966440 },
+            "Ministerio de Ecología y Recursos Naturales Renovables": { nombre: "Ministerio de Ecología y Recursos Naturales Renovables", dir: "San Lorenzo 1538", lat: -27.3695, lon: -55.8965 },
+            "Ministerio de Salud Pública": { nombre: "Ministerio de Salud Pública", dir: "Tucumán 2174", lat: -27.3710, lon: -55.8990 },
+            "Ministerio de Turismo": { nombre: "Ministerio de Turismo", dir: "Colón 1985", lat: -27.3660, lon: -55.8975 },
+            "Ministerio de Trabajo y Empleo": { nombre: "Ministerio de Trabajo y Empleo", dir: "Santa Fe 343", lat: -27.3630, lon: -55.8900 },
+            "Ministerio de Desarrollo Social, la Mujer y la Juventud": { nombre: "Ministerio de Desarrollo Social, la Mujer y la Juventud", dir: "Centro Cívico Edificio II", lat: -27.3780, lon: -55.9100 },
+            "Ministerio del Agro y la Producción": { nombre: "Ministerio del Agro y la Producción", dir: "Colón 1628", lat: -27.3645, lon: -55.8950 },
+            "Ministerio de Acción Cooperativa, Mutual, Comercio e Integración": { nombre: "Ministerio de Acción Cooperativa, Mutual, Comercio e Integración", dir: "Avenida Mitre 2180", lat: -27.3735, lon: -55.9010 },
+            "Ministerio de Derechos Humanos": { nombre: "Ministerio de Derechos Humanos", dir: "Félix de Azara 2440", lat: -27.3705, lon: -55.9025 },
+            "Ministerio de Industria": { nombre: "Ministerio de Industria", dir: "San Martín 1495", lat: -27.3640, lon: -55.8925 },
+            "Instituto de Macroeconomía Circular (IMaC)": { nombre: "Instituto de Macroeconomía Circular (IMaC)", dir: "San Lorenzo 2152", lat: -27.3715, lon: -55.8995 }
+        };
+
+        // Cargar direcciones guardadas previamente offline en la memoria local (localStorage)
+        let direccionesGuardadas = JSON.parse(localStorage.getItem('direcciones_posadas_offline') || '{}');
+
+        const seccionesCatastrales = [
+            { seccion: "Sección 001", chacras: "Sin Chacras", barrios: "Centro, Villa Sarita, Parque Paraguayo", desc: "Casco céntrico fundacional expandido hasta Av. Urquiza y Costanera." },
+            { seccion: "Sección 002", chacras: "1 a 14", barrios: "El Palomar, Parque de la Salud", desc: "Crecimiento inmediato al oeste/sudoeste del centro." },
+            { seccion: "Sección 003", chacras: "15 a 27", barrios: "Barrio Belgrano, Hipólito Yrigoyen", desc: "Sector residencial consolidado al sur del centro histórico." },
+            { seccion: "Sección 004", chacras: "28 a 39", barrios: "Villa Urquiza, Barrio Cristo Rey", desc: "Zona residencial histórica del este-sureste." },
+            { seccion: "Sección 011", chacras: "131 a 140", barrios: "Barrio Santa Rita Sur, Tiro Federal", desc: "Transición hacia el oeste y sudoeste de la ciudad." },
+            { seccion: "Sección 012", chacras: "Fracciones Ex-Ruta 12", barrios: "Miguel Lanús, Campus UNaM", desc: "Zona sur-este universitaria y residencial." },
+            { seccion: "Sección 018", chacras: "Macrolotes Itaembé Miní", barrios: "Itaembé Miní Oeste", desc: "Expansión habitacional masiva planificada." },
+            { seccion: "Sección 023", chacras: "Itaembé Guazú Sector 1", barrios: "Itaembé Guazú", desc: "Megaproyecto habitacional con infraestructura subterránea." }
+        ];
+
+        const map = L.map('map').setView([-27.3671, -55.8961], 14);
+
+        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        }).addTo(map);
+
+        setTimeout(() => { map.invalidateSize(); }, 200);
+
+        let currentMarker = null;
+        const infoContent = document.getElementById('info-content');
+
+        function determinarSeccion(lat, lon) {
+            if (lon < -55.94) return seccionesCatastrales[6];
+            if (lat < -27.41) return seccionesCatastrales[5];
+            if (lat > -27.37 && lon > -55.91) return seccionesCatastrales[0];
+            return seccionesCatastrales[2];
+        }
+
+        function ubicarEnMapa(lat, lon, titulo, detallesHtml) {
+            map.setView([lat, lon], 16);
+            setTimeout(() => { map.invalidateSize(); }, 100);
+
+            if (currentMarker) map.removeLayer(currentMarker);
+
+            currentMarker = L.marker([lat, lon]).addTo(map)
+                .bindPopup(`<b>${titulo}</b>`)
+                .openPopup();
+
+            const seccionInfo = determinarSeccion(lat, lon);
+
+            infoContent.innerHTML = `
+                <h3>📍 ${titulo}</h3>
+                <p><strong>Coordenadas GPS:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+                ${detallesHtml}
+                <div class="catastro-card">
+                    <p style="color: var(--primary-color); font-weight: bold;">📋 ${seccionInfo.seccion}</p>
+                    <p><strong>Barrios / Zona:</strong> ${seccionInfo.barrios}</p>
+                    <p><em>${seccionInfo.desc}</em></p>
+                </div>
+                <p style="color: var(--accent-color); margin-top: 0.5rem; font-weight: 500; font-size: 0.85rem;">✓ Ubicado con éxito.</p>
+            `;
+        }
+
+        function seleccionarCefMenu(cefKey) {
+            if (!cefKey) return;
+            const cef = baseDeDatosCEF[cefKey];
+            if (!cef) return;
+            const detalles = `
+                <p><strong>Director/a:</strong> ${cef.director}</p>
+                <p><strong>Teléfono:</strong> ${cef.telefono}</p>
+            `;
+            ubicarEnMapa(cef.lat, cef.lon, cef.nombre, detalles);
+        }
+
+        function seleccionarEntidadMenu(entKey) {
+            if (!entKey) return;
+            const ent = baseDeDatosOrganismos[entKey];
+            if (!ent) return;
+            const detalles = `<p><strong>Dirección:</strong> ${ent.dir}</p>`;
+            ubicarEnMapa(ent.lat, ent.lon, ent.nombre, detalles);
+        }
+
+        // Buscador inteligente con memoria local (localStorage) para offline
+        async function buscarDireccionLibre() {
+            const queryRaw = document.getElementById('search-input').value.trim();
+            if (!queryRaw) return;
+            const query = queryRaw.toLowerCase();
+
+            // 1. Revisar base CEF
+            for (let k in baseDeDatosCEF) {
+                if (k.toLowerCase().includes(query) || baseDeDatosCEF[k].director.toLowerCase().includes(query)) {
+                    document.getElementById('cef-select').value = k;
+                    seleccionarCefMenu(k);
+                    return;
+                }
+            }
+
+            // 2. Revisar Organismos Provinciales
+            for (let k in baseDeDatosOrganismos) {
+                if (k.toLowerCase().includes(query) || baseDeDatosOrganismos[k].dir.toLowerCase().includes(query)) {
+                    document.getElementById('entidades-select').value = k;
+                    seleccionarEntidadMenu(k);
+                    return;
+                }
+            }
+
+            // 3. Revisar memoria local guardada offline
+            if (direccionesGuardadas[query]) {
+                const guardado = direccionesGuardadas[query];
+                ubicarEnMapa(guardado.lat, guardado.lon, queryRaw, `<p><strong>Dirección en memoria offline:</strong> ${guardado.display}</p>`);
+                return;
+            }
+
+            // 4. Buscar en línea y guardar automáticamente para futuras consultas offline
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryRaw + ", Posadas, Misiones, Argentina")}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    const displayName = data[0].display_name;
+
+                    // Guardar automáticamente en localStorage de la PC
+                    direccionesGuardadas[query] = { lat: lat, lon: lon, display: displayName };
+                    localStorage.setItem('direcciones_posadas_offline', JSON.stringify(direccionesGuardadas));
+
+                    ubicarEnMapa(lat, lon, queryRaw, `<p><strong>Dirección encontrada y guardada offline:</strong> ${displayName}</p>`);
+                } else {
+                    alert("No se encontró la dirección ingresada: " + queryRaw);
+                }
+            } catch (error) {
+                alert("No hay conexión a internet y la dirección no está guardada en la memoria local offline.");
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarDireccionLibre();
+        });
+
+        window.onload = () => {
+            document.getElementById('cef-select').value = "CEF N°1";
+            seleccionarCefMenu("CEF N°1");
+        };
+    </script>
+</body>
+</html>
